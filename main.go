@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v2"
 )
@@ -99,15 +100,21 @@ func putMC(cred *azidentity.ClientCertificateCredential, subscriptionID, resourc
 	if *dryRun {
 		return
 	}
-	_, err = clientFactory.NewManagedClustersClient().BeginCreateOrUpdate(context.Background(), resourceGroup, resourceName, armcontainerservice.ManagedCluster{
-		Location: mc.Location,
-		Identity: mc.Identity,
-		SKU:      mc.SKU,
-		Tags:     mc.Tags,
-	}, nil)
 
-	if err != nil {
-		log.Printf("failed to finish the request: %v\n", err)
+	if mc.Identity != nil && mc.Identity.Type != nil && *mc.Identity.Type == armcontainerservice.ResourceIdentityTypeSystemAssigned {
+		_, err = clientFactory.NewManagedClustersClient().BeginCreateOrUpdate(context.Background(), resourceGroup, resourceName, armcontainerservice.ManagedCluster{
+			Location: mc.Location,
+			Identity: &armcontainerservice.ManagedClusterIdentity{
+				Type: to.Ptr(armcontainerservice.ResourceIdentityTypeSystemAssigned),
+			},
+			SKU:  mc.SKU,
+			Tags: mc.Tags,
+		}, nil)
+
+		if err != nil {
+			log.Printf("failed to finish the request: %v\n", err)
+		}
+
 	}
 
 	// don't wait
