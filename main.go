@@ -102,6 +102,8 @@ func putMC(cred *azidentity.ClientCertificateCredential, subscriptionID, resourc
 	}
 
 	if mc.Identity != nil && mc.Identity.Type != nil && *mc.Identity.Type == armcontainerservice.ResourceIdentityTypeSystemAssigned {
+		log.Printf("existing principalID: %s\n", *mc.Identity.PrincipalID)
+
 		_, err = clientFactory.NewManagedClustersClient().BeginCreateOrUpdate(context.Background(), resourceGroup, resourceName, armcontainerservice.ManagedCluster{
 			Location: mc.Location,
 			Identity: &armcontainerservice.ManagedClusterIdentity{
@@ -109,6 +111,9 @@ func putMC(cred *azidentity.ClientCertificateCredential, subscriptionID, resourc
 			},
 			SKU:  mc.SKU,
 			Tags: mc.Tags,
+			Properties: &armcontainerservice.ManagedClusterProperties{
+				DNSPrefix: mc.Properties.DNSPrefix,
+			},
 		}, nil)
 
 		if err != nil {
